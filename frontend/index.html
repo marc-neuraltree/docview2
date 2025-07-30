@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Military PDF Viewer</title>
+    <link rel="stylesheet" href="/static/css/main.css?v=1.1">
+    <link rel="stylesheet" href="/static/css/navigation.css?v=1.1">
+    <link rel="stylesheet" href="/static/css/pdf-viewer.css?v=1.8">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // Check if PDF.js loaded correctly
+        window.addEventListener('load', function() {
+            if (typeof pdfjsLib === 'undefined') {
+                console.error('PDF.js library failed to load');
+                document.body.innerHTML = '<div style="padding: 20px; text-align: center;"><h2>Error</h2><p>PDF.js library failed to load. Please check your internet connection.</p></div>';
+            } else {
+                console.log('PDF.js library loaded successfully');
+                console.log('PDF.js version:', pdfjsLib.version);
+            }
+        });
+        
+        // Add global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
+    </script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Navigation Panel -->
+        <div class="left-panel">
+            <div class="panel-header">
+                <h1>Military PDF Viewer</h1>
+                <div class="system-status">
+                    <span class="status-indicator" id="status-indicator"></span>
+                    <span class="status-text">System Ready</span>
+                </div>
+            </div>
+
+            <!-- OPORD Section -->
+            <div class="nav-section" data-category="opord">
+                <div class="section-header" onclick="toggleSection('opord')">
+                    <span class="section-icon">📋</span>
+                    <span class="section-title">OPORD</span>
+                    <span class="section-toggle" id="opord-toggle">−</span>
+                    <span class="file-count" id="opord-count">0</span>
+                </div>
+                <div class="section-content" id="opord-content">
+                    <div class="file-list" id="opord-files"></div>
+                </div>
+            </div>
+
+            <!-- WARNO Section -->
+            <div class="nav-section" data-category="warno">
+                <div class="section-header" onclick="toggleSection('warno')">
+                    <span class="section-icon">⚠️</span>
+                    <span class="section-title">WARNO</span>
+                    <span class="section-toggle" id="warno-toggle">−</span>
+                    <span class="file-count" id="warno-count">0</span>
+                </div>
+                <div class="section-content" id="warno-content">
+                    <div class="file-list" id="warno-files"></div>
+                </div>
+            </div>
+
+            <!-- INTEL Section -->
+            <div class="nav-section" data-category="intel">
+                <div class="section-header" onclick="toggleSection('intel')">
+                    <span class="section-icon">🔍</span>
+                    <span class="section-title">INTEL</span>
+                    <span class="section-toggle" id="intel-toggle">−</span>
+                    <span class="file-count" id="intel-count">0</span>
+                </div>
+                <div class="section-content" id="intel-content">
+                    <div class="file-list" id="intel-files"></div>
+                </div>
+            </div>
+
+            <!-- Search Section -->
+            <div class="search-section">
+                <input type="text" id="search-input" placeholder="Search documents..." onkeyup="handleSearch(event)">
+                <button id="search-btn" onclick="performSearch()">🔍</button>
+                <button id="scan-btn" onclick="scanDirectories()" title="Scan for new documents">📁</button>
+            </div>
+        </div>
+
+        <!-- Right PDF Viewer Panel -->
+        <div class="right-panel">
+            <div class="viewer-header">
+                <div class="document-info">
+                    <span class="document-name" id="current-document">No document selected</span>
+                    <div class="document-meta" id="document-meta"></div>
+                </div>
+                <div class="viewer-controls">
+                    <button onclick="zoomOut()" title="Zoom Out">🔍−</button>
+                    <span id="zoom-level">100%</span>
+                    <button onclick="zoomIn()" title="Zoom In">🔍+</button>
+                    <button onclick="fitToWidth()" title="Fit to Width">↔️</button>
+                    <button onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+                </div>
+            </div>
+
+            <div class="viewer-content">
+                <div class="pdf-viewer" id="pdf-viewer">
+                    <div class="welcome-message">
+                        <div class="welcome-icon">📄</div>
+                        <h2>Military Document Viewer</h2>
+                        <p>Select a document from the left panel to begin viewing</p>
+                        <div class="quick-actions">
+                            <p>Documents are loaded from the backend directories</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="viewer-footer">
+                <div class="page-navigation">
+                    <button onclick="previousPage()" id="prev-page" disabled>◀ Previous</button>
+                    <span class="page-info">
+                        Page <input type="number" id="current-page" value="1" min="1" onchange="goToPage(this.value)"> 
+                        of <span id="total-pages">0</span>
+                    </span>
+                    <button onclick="nextPage()" id="next-page" disabled>Next ▶</button>
+                </div>
+                <div class="loading-indicator" id="loading-indicator" style="display: none;">
+                    <span class="spinner"></span>
+                    <span>Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="/static/js/services/api.js"></script>
+    <script src="/static/js/services/pdf-service.js"></script>
+    <script src="/static/js/components/navigation.js"></script>
+    <script src="/static/js/components/pdf-viewer.js"></script>
+
+    <script src="/static/js/utils/helpers.js"></script>
+    <script src="/static/js/main.js?v=1.1"></script>
+</body>
+</html>
