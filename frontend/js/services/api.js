@@ -88,6 +88,15 @@ class APIService {
         return this.request(`/documents/?search=${encodeURIComponent(query)}`);
     }
 
+    async searchDocumentContent(query, category = null) {
+        const categoryParam = category ? `?category=${encodeURIComponent(category)}` : '';
+        return this.request(`/documents/search-content/${encodeURIComponent(query)}${categoryParam}`);
+    }
+
+    async searchInDocument(documentId, query) {
+        return this.request(`/documents/doc/${documentId}/search/${encodeURIComponent(query)}`);
+    }
+
     async checkHealth() {
         return this.request('/health');
     }

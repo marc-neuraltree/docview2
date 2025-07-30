@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Military PDF Viewer</title>
-    <link rel="stylesheet" href="/static/css/main.css?v=1.1">
-    <link rel="stylesheet" href="/static/css/navigation.css?v=1.1">
-    <link rel="stylesheet" href="/static/css/pdf-viewer.css?v=1.8">
+    <link rel="stylesheet" href="/static/css/main.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/navigation.css?v=2.0">
+    <link rel="stylesheet" href="/static/css/pdf-viewer.css?v=2.0">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         // Check if PDF.js loaded correctly
@@ -32,10 +32,15 @@
 </head>
 <body>
     <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1 class="app-title">Military PDF Viewer</h1>
+            <div class="mobile-toggle" id="mobile-toggle" style="display: none;">☰</div>
+        </header>
+        
         <!-- Left Navigation Panel -->
-        <div class="left-panel">
+        <div class="left-panel" id="left-panel">
             <div class="panel-header">
-                <h1>Military PDF Viewer</h1>
                 <div class="system-status">
                     <span class="status-indicator" id="status-indicator"></span>
                     <span class="status-text">System Ready</span>
@@ -84,10 +89,13 @@
             <!-- Search Section -->
             <div class="search-section">
                 <input type="text" id="search-input" placeholder="Search documents..." onkeyup="handleSearch(event)">
-                <button id="search-btn" onclick="performSearch()">🔍</button>
-                <button id="scan-btn" onclick="scanDirectories()" title="Scan for new documents">📁</button>
+                <button class="btn" id="search-btn" onclick="performSearch()">🔍</button>
+                <button class="btn btn-primary" id="scan-btn" onclick="scanDirectories()" title="Scan for new documents">📁</button>
             </div>
         </div>
+        
+        <!-- Mobile Overlay -->
+        <div class="mobile-overlay" id="mobile-overlay"></div>
 
         <!-- Right PDF Viewer Panel -->
         <div class="right-panel">
@@ -97,11 +105,11 @@
                     <div class="document-meta" id="document-meta"></div>
                 </div>
                 <div class="viewer-controls">
-                    <button onclick="zoomOut()" title="Zoom Out">🔍−</button>
+                    <button class="btn" onclick="zoomOut()" title="Zoom Out">🔍−</button>
                     <span id="zoom-level">100%</span>
-                    <button onclick="zoomIn()" title="Zoom In">🔍+</button>
-                    <button onclick="fitToWidth()" title="Fit to Width">↔️</button>
-                    <button onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+                    <button class="btn" onclick="zoomIn()" title="Zoom In">🔍+</button>
+                    <button class="btn" onclick="fitToWidth()" title="Fit to Width">↔️</button>
+                    <button class="btn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
                 </div>
             </div>
 
@@ -120,12 +128,12 @@
 
             <div class="viewer-footer">
                 <div class="page-navigation">
-                    <button onclick="previousPage()" id="prev-page" disabled>◀ Previous</button>
+                    <button class="btn" onclick="previousPage()" id="prev-page" disabled>◀ Previous</button>
                     <span class="page-info">
                         Page <input type="number" id="current-page" value="1" min="1" onchange="goToPage(this.value)"> 
                         of <span id="total-pages">0</span>
                     </span>
-                    <button onclick="nextPage()" id="next-page" disabled>Next ▶</button>
+                    <button class="btn" onclick="nextPage()" id="next-page" disabled>Next ▶</button>
                 </div>
                 <div class="loading-indicator" id="loading-indicator" style="display: none;">
                     <span class="spinner"></span>

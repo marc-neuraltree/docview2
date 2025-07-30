@@ -234,3 +234,49 @@ async def scan_category_directory(category: str, db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Category scan failed: {str(e)}")
+
+@router.get("/search-content/{search_term}")
+async def search_all_documents_content(
+    search_term: str,
+    category: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Search for text content across all PDF documents"""
+    try:
+        query = db.query(Document).filter(Document.is_active == True)
+        
+        if category:
+            try:
+                category_enum = CategoryEnum(category)
+                query = query.filter(Document.category == category_enum)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid category")
+        
+        documents = query.all()
+        search_results = []
+        pdf_processor = PDFProcessor()
+        
+        for document in documents:
+            resolved_path = resolve_file_path(document.file_path)
+            if os.path.exists(resolved_path):
+                try:
+                    results = pdf_processor.search_text_in_pdf(resolved_path, search_term)
+                    if results:  # Only include documents with matches
+                        search_results.append({
+                            "document": document.to_dict(),
+                            "search_results": results,
+                            "total_matches": sum(result["matches"] for result in results)
+                        })
+                except Exception as e:
+                    print(f"Error searching in document {document.id}: {str(e)}")
+                    continue
+        
+        return {
+            "search_term": search_term,
+            "documents_searched": len(documents),
+            "documents_with_matches": len(search_results),
+            "results": search_results,
+            "total_matches": sum(doc["total_matches"] for doc in search_results)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Content search failed: {str(e)}")

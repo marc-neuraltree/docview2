@@ -199,26 +199,123 @@ class NavigationManager {
     async searchDocuments(query) {
         if (!query.trim()) {
             await this.loadDocuments();
+            this.clearSearchResults();
+            // Clear any PDF highlights
+            if (window.clearPDFHighlights) {
+                window.clearPDFHighlights();
+            }
             return;
         }
 
         try {
-            const results = await apiService.searchDocuments(query);
-            
-            const categorizedResults = {
-                opord: results.filter(doc => doc.category === 'opord'),
-                warno: results.filter(doc => doc.category === 'warno'),
-                intel: results.filter(doc => doc.category === 'intel')
-            };
+            // Show loading state
+            this.showSearchLoading(true);
 
-            Object.keys(categorizedResults).forEach(category => {
-                this.renderCategoryDocuments(category, categorizedResults[category]);
-                this.updateFileCount(category, categorizedResults[category].length);
-            });
+            // Search both document names/metadata and PDF content in parallel
+            const [nameResults, contentResults] = await Promise.all([
+                apiService.searchDocuments(query),
+                apiService.searchDocumentContent(query)
+            ]);
+
+            // Also search within the currently open PDF for immediate highlighting
+            if (window.searchCurrentPDF) {
+                const currentPdfResults = window.searchCurrentPDF(query);
+            }
+
+            // Combine and display results
+            this.displaySearchResults(query, nameResults, contentResults);
+            this.showSearchLoading(false);
 
         } catch (error) {
             console.error('Error searching documents:', error);
             this.showError('Search failed');
+            this.showSearchLoading(false);
+        }
+    }
+
+    displaySearchResults(query, nameResults, contentResults) {
+        // Clear existing search status
+        this.clearSearchResults();
+
+        // Show comprehensive search results
+        const searchSection = document.querySelector('.search-section');
+        const resultsContainer = document.createElement('div');
+        resultsContainer.className = 'search-results-container';
+        
+        let totalContentMatches = contentResults.total_matches || 0;
+        let documentsWithContent = contentResults.documents_with_matches || 0;
+        
+        resultsContainer.innerHTML = `
+            <div class="search-results-summary">
+                <h4>Search Results for "${query}"</h4>
+                <div class="search-stats">
+                    <span class="stat">📄 ${nameResults.length} documents by name</span>
+                    <span class="stat">🔍 ${totalContentMatches} content matches in ${documentsWithContent} documents</span>
+                </div>
+            </div>
+            ${this.renderContentSearchResults(contentResults)}
+        `;
+        
+        searchSection.appendChild(resultsContainer);
+
+        // Update the main document listing to show name-based results
+        const categorizedNameResults = {
+            opord: nameResults.filter(doc => doc.category === 'opord'),
+            warno: nameResults.filter(doc => doc.category === 'warno'),
+            intel: nameResults.filter(doc => doc.category === 'intel')
+        };
+
+        Object.keys(categorizedNameResults).forEach(category => {
+            this.renderCategoryDocuments(category, categorizedNameResults[category]);
+            this.updateFileCount(category, categorizedNameResults[category].length);
+        });
+    }
+
+    renderContentSearchResults(contentResults) {
+        if (!contentResults.results || contentResults.results.length === 0) {
+            return '<div class="no-content-results">No content matches found</div>';
+        }
+
+        let html = '<div class="content-search-results"><h5>Documents with Content Matches:</h5>';
+        
+        contentResults.results.forEach(result => {
+            const doc = result.document;
+            const matches = result.total_matches;
+            const pages = result.search_results.map(sr => sr.page).join(', ');
+            
+            html += `
+                <div class="content-result-item" onclick="loadDocumentAndHighlight(${doc.id}, '${contentResults.search_term}')">
+                    <div class="content-result-header">
+                        <span class="content-result-name">${doc.original_name}</span>
+                        <span class="content-result-matches">${matches} matches</span>
+                    </div>
+                    <div class="content-result-meta">
+                        <span class="content-result-category">${doc.category.toUpperCase()}</span>
+                        <span class="content-result-pages">Pages: ${pages}</span>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        return html;
+    }
+
+    showSearchLoading(show) {
+        const searchBtn = document.getElementById('search-btn');
+        if (show) {
+            searchBtn.innerHTML = '<span class="spinner"></span>';
+            searchBtn.disabled = true;
+        } else {
+            searchBtn.innerHTML = '🔍';
+            searchBtn.disabled = false;
+        }
+    }
+
+    clearSearchResults() {
+        const existingResults = document.querySelector('.search-results-container');
+        if (existingResults) {
+            existingResults.remove();
         }
     }
 
@@ -280,3 +377,23 @@ function performSearch() {
     const query = searchInput.value.trim();
     navigationManager.searchDocuments(query);
 }
+
+// Global function to load a document and highlight search terms
+window.loadDocumentAndHighlight = async function(documentId, searchTerm) {
+    try {
+        // Load the document first
+        if (navigationManager.currentDocument !== documentId) {
+            await navigationManager.loadDocument(documentId);
+        }
+        
+        // Wait a moment for the PDF to load
+        setTimeout(() => {
+            if (window.searchCurrentPDF) {
+                window.searchCurrentPDF(searchTerm);
+            }
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Error loading document and highlighting:', error);
+    }
+};
